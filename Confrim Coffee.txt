@@ -1,0 +1,711 @@
+CoffeeManagement.js
+
+
+
+
+import React, { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { connect } from "react-redux";
+import { updateRemark } from "./actions";
+import "./Coffee.css";
+import Header from "./Header";
+
+const CoffeeManagementDashboard = ({ coffeeItems, updateRemark }) => {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [editItemId, setEditItemId] = useState(null);
+  const [editRemark, setEditRemark] = useState("");
+  const navigate = useNavigate();
+
+  const filteredData = coffeeItems.filter((item) =>
+    item.title.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const handleSearch = (e) => {
+    setSearchTerm(e.target.value);
+  };
+
+  const handleEditClick = (id) => {
+    setEditItemId(id);
+    const item = coffeeItems.find((item) => item.id === id);
+    if (item) {
+      setEditRemark(item.remark);
+    }
+  };
+
+  const handleEditRemarkChange = (e) => {
+    setEditRemark(e.target.value);
+  };
+
+  const handleEditRemarkSubmit = (e) => {
+    e.preventDefault();
+    updateRemark(editItemId, editRemark);
+    setEditItemId(null);
+    setEditRemark("");
+  };
+
+  const handleDeleteClick = (id) => {
+    updateRemark(id, ""); // Remove the remark by passing an empty string
+  };
+
+  return (
+    <div className="AZ">
+      <Header />
+      <div className="CV">
+        <h1>COFFEE MENU</h1>
+      </div>
+      <div className="cb">
+        <input
+          type="text"
+          placeholder="Search..."
+          value={searchTerm}
+          onChange={handleSearch}
+        />
+      </div>
+      <br />
+      <div className="image-cards">
+        {filteredData.map((item) => (
+          <div key={item.id}>
+            <Link to={`/Data/${item.id}`}>
+              {item.image ? (
+                <img
+                  className="image-card"
+                  src={item.image}
+                  alt={item.title}
+                />
+              ) : (
+                <p className="no-image-text">NO IMAGE IS AVAILABLE</p>
+              )}
+            </Link>
+            <div> 
+              <h2>{item.title}</h2>
+              {editItemId === item.id ? (
+                <form onSubmit={handleEditRemarkSubmit}>
+                  <input
+                    type="text"
+                    value={editRemark}
+                    onChange={handleEditRemarkChange}
+                  />
+                  <button type="submit" className="edit-button">Update</button>
+                </form>
+              ) : (
+                <>
+                  <p>Remark: {item.remark}</p>
+                  <div className="button-container">
+                    <button className="edit-button" onClick={() => handleEditClick(item.id)}>Edit</button>
+                    <button className="delete-button" onClick={() => handleDeleteClick(item.id)}>Delete</button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const mapStateToProps = (state) => {
+  return {
+    coffeeItems: state.coffeeItems,
+  };
+};
+
+const mapDispatchToProps = {
+  updateRemark,
+};
+
+export default connect(mapStateToProps, mapDispatchToProps)(
+  CoffeeManagementDashboard
+);
+
+
+
+
+
+
+
+
+
+Details.js
+
+
+
+
+import React, { useState } from "react";
+import { useParams } from "react-router-dom";
+import { connect } from "react-redux";
+import { updateRemark } from "./actions";
+import Data from "./Data.json";
+import "./Coffee.css";
+import Header from "./Header";
+import { useNavigate } from "react-router-dom";
+
+const Details = ({ coffeeItems, updateRemark }) => {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const coffeeItem = Data.find((item) => item.id === parseInt(id));
+  const [remark, setRemark] = useState("");
+
+  const handleDeleteClick = () => {
+    updateRemark(coffeeItem.id, ""); 
+    navigate("/coffee");
+  };
+
+  const handleRemarksSubmit = (e) => {
+    e.preventDefault();
+    updateRemark(coffeeItem.id, remark);
+    navigate("/coffee");
+  };
+
+  const handleBackClick = () => {
+    navigate("/coffee");
+  };
+
+  if (!coffeeItem) {
+    return <div>Not found</div>;
+  }
+
+  return (
+    <div className="WE">
+      <Header />
+      <div className="coffee-details">
+        <img
+          className="coffee-image"
+          src={coffeeItem.image}
+          alt={coffeeItem.title}
+        />
+        <h2 className="coffee-title">{coffeeItem.title}</h2>
+        <p className="coffee-description">{coffeeItem.description}</p>
+        <p className="coffee-description">{coffeeItem.ingredients}</p>
+        <form onSubmit={handleRemarksSubmit}>
+          <label htmlFor="remark">Add Remark:</label>
+          <input
+            type="text"
+            id="remark"
+            value={remark}
+            onChange={(e) => setRemark(e.target.value)}
+          />
+          <div className="button-container">
+          <button className="edit-button" type="submit">Submit</button>
+          <button className="delete-button" onClick={handleBackClick}>Back</button>
+          </div>
+        </form>
+        {/* <p>Remark: {coffeeItem.remark}</p> */}
+        {/* <button onClick={handleDeleteClick}>Delete</button> */}
+    
+      </div>
+    </div>
+  );
+};
+
+const mapStateToProps = (state) => {
+  return {
+    coffeeItems: state.coffeeItems,
+  };
+};
+
+const mapDispatchToProps = {
+  updateRemark,
+};
+
+export default connect(mapStateToProps, mapDispatchToProps)(Details);
+
+
+
+
+
+
+actions.js
+
+
+
+export const UPDATE_REMARK = "UPDATE_REMARK";
+
+
+export const updateRemark = (id, remark) => ({
+  type: UPDATE_REMARK,
+  payload: {
+    id,
+    remark,
+  },
+});
+
+
+
+
+reducer.js
+
+
+
+
+import { UPDATE_REMARK } from "./actions";
+import Data from "./Data.json";
+
+const initialState = {
+  coffeeItems: Data,
+};
+
+const reducer = (state = initialState, action) => {
+  switch (action.type) {
+    case UPDATE_REMARK:
+      const { id, remark } = action.payload;
+      const updatedCoffeeItems = state.coffeeItems.map((item) => {
+        if (item.id === id) {
+          return { ...item, remark };
+        }
+        return item;
+      });
+      return {
+        ...state,
+        coffeeItems: updatedCoffeeItems,
+      };
+    default:
+      return state;
+  }
+};
+
+export default reducer;
+
+
+
+Coffee.css
+
+
+
+.image-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr ;
+  grid-gap: 20px;
+
+   flex-wrap: wrap;
+   gap: 10px;
+ }
+ .cb{
+    width: 280px;
+ }
+ .image-card {
+   width: 80%;
+   aspect-ratio: 3/2;
+   mix-blend-mode: color-burn;
+   /* border: 1px solid #ccc; */
+   /* animation: colorChange 3s infinite alternate; */
+   border-radius: 5px;
+   padding: 10px;
+   text-align: center;
+   object-fit: contain;
+   transition: transform 0.3s ease;
+
+ }
+ .image-card:hover {
+   transform: scale(1.1);
+ }
+ .image-card img {
+   width: 100%;
+   height: auto;
+ }
+ 
+ h1 {
+   text-align: center;
+ }
+ 
+ input {
+   width: 100%;
+   padding: 10px;
+   margin-bottom: 20px;
+ }
+.CV{
+   color: brown;
+   
+}
+
+ 
+ .coffee-details {
+   margin: auto;
+   /* margin-top: 50px; */
+   max-width: 400px;
+   padding: 20px;
+   /* background-color: #f2f2f2; */
+   border-radius: 5px;
+ }
+ 
+ .coffee-title {
+   font-size: 24px;
+   margin-bottom: 10px;
+   margin-left: 100px;
+ }
+ 
+ .coffee-description {
+   font-size: 16px;
+   line-height: 1.5;
+   margin-left: 100px;
+ }
+
+ .coffee-image{
+   width: 90%;
+   object-fit: contain;
+   margin-left: 100px;
+ }
+.WE{
+   background-image: url("./df.jpg");
+   background-repeat: no-repeat;
+   background-size: cover;
+ }
+
+.no-image-text{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 200px;
+  background-color: #f5f5f5;
+  color:red;
+  font-size: 16px;
+}
+
+
+
+
+.body{
+  animation: color 3s infinite alternate;
+
+}
+.button-container {
+  display: flex;
+  gap: 8px;
+}
+
+.edit-button {
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.delete-button {
+  background-color: #f44336;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+
+
+
+Home.js
+
+
+
+import React from "react";
+import { TextField, Button, Grid, Card, CardContent } from "@material-ui/core";
+import {useNavigate} from "react-router-dom"
+import { red } from "@mui/material/colors";
+
+
+
+const Home = () => {
+  const coffeeTitleStyles = {
+    fontSize: "24px",
+    justifyContent:"center",
+    alignItems:"center",
+    animation: "colorAnimation 2s infinite alternate",
+    backgroundcolor:"red",
+  };
+  const nav = useNavigate();
+
+      const submit=()=>{
+          nav("/coffee")
+       }
+  const offerCardStyles = {
+    transition: "background-color 0.3s",
+     cursor: "pointer",
+     "&:hover":{
+        background:red
+     },
+    
+  };
+
+  const nameInputStyles = {
+    width: "80%",
+    maxWidth: "300px",
+  };
+
+  
+  return (
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        padding: "20px",
+      }}
+    >
+      <div
+        style={{
+          flex: "0 0 50%",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <img
+          style={{
+            maxWidth: "100%",
+            maxHeight: "100%",
+            marginBottom:"40px",
+            width:"400px",
+          }}
+          src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQeoTmDs8lK4drWX8vtwTxt2AQEgg3TjjshieDpyrGqZw&usqp=CAU&ec=48600113"
+          alt="Coffee Image"
+        />
+      </div>
+      <div
+        style={{
+          flex: "0 0 50%",
+          padding: "20px",
+        }}
+      >
+        <h2 style={coffeeTitleStyles}>COFFEE DAY</h2>
+        <div style={{ marginBottom: "20px" }}>
+          <Grid container spacing={2}>
+            <Grid item xs={12} sm={6} md={3}>
+              <Card style={offerCardStyles}>
+                <CardContent>
+                  <h3>Offer 1</h3>
+                  <p>BUY 2 
+                    Affogato
+                    GET 1 FREE</p>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <Card style={offerCardStyles}>
+                <CardContent>
+                  <h3>Offer 2</h3>
+                  <p> Get 4 Cappuccino 
+                     Rs 600  </p>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <Card style={offerCardStyles}>
+                <CardContent>
+                  <h3>Offer 3</h3>
+                  <p>FLAT OFF RS 1000 FOR BILL 4000</p>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <Card style={offerCardStyles}>
+                <CardContent>
+                  <h3>Offer 4</h3>
+                  <p>COMBOOO 3 Latte AND 2 Espresso RS:600 </p>
+                </CardContent>
+              </Card>
+            </Grid>
+          </Grid>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+          <TextField
+            label="Name"
+            variant="outlined"
+            style={nameInputStyles}
+          />
+          <TextField
+            label="Phone Number"
+            variant="outlined"
+            style={nameInputStyles}
+        />
+     <Button variant="contained" onClick={submit} color="success " style={{with:"fit-content",alignItems:"flex-start",padding:"10px"}} >
+          Click for MORE MENU
+     </Button>
+
+
+        
+        </div>
+        
+        </div>
+        </div>
+)}
+export default Home
+
+
+
+
+
+Header.js
+
+
+
+
+import React from "react";
+import "./Header.css";
+
+const Header = () => {
+  return (
+    <div className="home-container">
+      <header className="header">
+        <div className="logo-left">
+          <img src="https://png.pngtree.com/png-clipart/20211017/original/pngtree-time-for-coffee-logo-design-png-image_6852251.png" alt="Left Logo" />
+        </div>
+        <h1 className="header-title " style={{fontFamily:"cursive"}}>COFFEE DRINKS</h1>
+        <div className="logo-right">
+          <img src="https://www.logomyway.com/logo-maker/SEOImages/coffee-shop-logos.png" alt="Right Logo" />
+        </div>
+      </header>
+      <div className="gh">
+        
+      </div>
+    </div>
+  );
+};
+
+export default Header;
+
+
+
+
+Header.Css
+
+
+
+
+
+
+
+  
+  
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px;
+    background-color: #333333;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    animation: colorChange 3s infinite alternate;
+  }
+  
+  @keyframes colorChange {
+    0% {
+      background-color: #333333;
+    }
+    /* 50% {
+      background-color: #ffcc00;
+    } */
+    100% {
+      background-color: #333333;
+    }
+    0% {
+        background-color: violet;
+      }
+      50% {
+        background-color: cornflowerblue;
+      }
+      100% {
+        background-color: #333333;
+      }
+  }
+  
+  .logo-left {
+    display: flex;
+    align-items: center;
+  }
+  
+  .logo-right {
+    display: flex;
+    align-items: center;
+  }
+  
+  .logo-left img,
+  .logo-right img {
+    width: 100px;
+    height: 100px;
+
+  }
+
+  .header-title {
+    font-size: 45px;
+    font-weight: bold;
+    color: #ffffff;
+   
+  }
+
+
+
+
+
+App.js
+
+
+
+
+
+
+import React from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { Provider } from "react-redux";
+import { createStore } from "redux";
+import reducer from "./reducer";
+import Home from './Home'
+import Details from "./Details";
+import CoffeeManagement from "./CoffeeManagement";
+
+const store = createStore(reducer);
+
+const App = () => {
+  return (
+    <Provider store={store}>
+
+        <Routes>
+         <Route  path="/"element={<Home/>} />
+          <Route path="/coffee" element={<CoffeeManagement />} />
+          <Route path="/Data/:id" element={<Details />} />
+        </Routes>
+     
+    </Provider>
+  );
+};
+
+export default App;
+
+
+
+
+Index.js
+
+
+
+
+
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import './index.css';
+import App from './App';
+import reportWebVitals from './reportWebVitals';
+import { BrowserRouter} from 'react-router-dom';
+
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(
+  <React.StrictMode>
+    <BrowserRouter>
+
+    <App/>
+    </BrowserRouter>
+
+  </React.StrictMode>
+);
+
+// If you want to start measuring performance in your app, pass a function
+// to log results (for example: reportWebVitals(console.log))
+// or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
+reportWebVitals();
