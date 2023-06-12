@@ -1,0 +1,132 @@
+
+import React, { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { connect } from "react-redux";
+import { updateRemark } from "./actions";
+import "./Coffee.css";
+import Header from "./Header";
+
+const CoffeeManagementDashboard = ({ coffeeItems, updateRemark }) => {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [editItemId, setEditItemId] = useState(null);
+  const [editRemark, setEditRemark] = useState("");
+  const navigate = useNavigate();
+
+  const filteredData = coffeeItems.filter((item) =>
+    item.title.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const handleSearch = (e) => {
+    setSearchTerm(e.target.value);
+  };
+
+  const handleEditClick = (id) => {
+    setEditItemId(id);
+    const item = coffeeItems.find((item) => item.id === id);
+    if (item) {
+      setEditRemark(item.remark);
+    }
+  };
+
+  const handleEditRemarkChange = (e) => {
+    setEditRemark(e.target.value);
+  };
+
+
+  const back =()=>{
+    navigate('/')
+  }
+
+  const handleEditRemarkSubmit = (e) => {
+    e.preventDefault();
+    updateRemark(editItemId, editRemark);
+    setEditItemId(null);
+    setEditRemark("");
+  };
+
+  const handleDeleteClick = (id) => {
+    updateRemark(id, ""); 
+  };
+
+  return (
+    <div className="AZ">
+      <Header />
+      <div className="CV">
+        <h1>COFFEE MENU</h1>
+      </div>
+      <div className="cb" style={{display:'flex',flexDirection:'row',justifyContent:'space-between', width:'1300px'}}>
+        <div>
+        <input
+          type="text"
+          placeholder="Search..."
+          value={searchTerm}
+          onChange={handleSearch}
+        />
+        </div>
+        <div className="button-container">
+          <button className="edit-button" style={{padding:'0px 35px',borderRadius:'30px'}} onClick={back}>LOGOUT</button>
+        </div>
+      </div>
+      <br />
+      <div className="image-cards">
+        {filteredData.map((item) => (
+          <div key={item.id}>
+            <Link to={`/Data/${item.id}`}>
+              {item.image ? (
+                <img
+                  className="image-card"
+                  src={item.image}
+                  alt={item.title}
+                />
+              ) : (
+                <p className="no-image-text">NO IMAGE IS AVAILABLE</p>
+              )}
+            </Link>
+            <div> 
+              <h2>{item.title}</h2>
+              {editItemId === item.id ? (
+
+                <form onSubmit={handleEditRemarkSubmit}>
+                  <div style={{display:'flex', flexDirection:'column'}}>
+                    <div>
+                  <input style={{width:'270px'}}
+                    type="text"
+                    value={editRemark}
+                    onChange={handleEditRemarkChange}
+                  />
+                  </div>
+                  <div>
+                  <button type="submit" className="edit-button">Update</button>
+                  </div>
+                  </div>
+                </form>
+              ) : (
+                <>
+                  <p>Remark: {item.remark}</p>
+                  <div className="button-container">
+                    <button className="edit-button" onClick={() => handleEditClick(item.id)}>Edit</button>
+                    <button className="delete-button" onClick={() => handleDeleteClick(item.id)}>Delete</button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const mapStateToProps = (state) => {
+  return {
+    coffeeItems: state.coffeeItems,
+  };
+};
+
+const mapDispatchToProps = {
+  updateRemark,
+};
+
+export default connect(mapStateToProps, mapDispatchToProps)(
+  CoffeeManagementDashboard
+);
